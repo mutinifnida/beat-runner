@@ -1,0 +1,30 @@
+<!-- html/countdown-screen.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Beat Runner – Countdown</title>
+
+  <!-- generic globals -->
+  <!-- night-sky background positioning -->
+  <link rel="stylesheet" href="../css/background.css" />
+  <!-- shared screen layout & fade -->
+  <link rel="stylesheet" href="../css/screen-style.css" />
+  <!-- countdown-specific styles -->
+  <link rel="stylesheet" href="../css/countdown-style.css" />
+</head>
+<body class="overlay">
+  <!-- animated Night Sky background -->
+  <canvas id="gameCanvas" class="canvas-background"></canvas>
+
+  <div id="game">
+    <div class="screen active" id="countdownScreen">
+      <h1 id="countdownText"></h1>
+    </div>
+  </div>
+
+  <!-- kicks off both background & countdown logic -->
+  <script type="module" src="../js/countdown-screen.js" defer></script>
+</body>
+</html>

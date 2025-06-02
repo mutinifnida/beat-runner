@@ -1,0 +1,107 @@
+/* styles.css */
+/* ————————————————————————————————————— */
+/*  Generic page stylesheet (loaded by all pages) */
+/* ————————————————————————————————————— */
+
+@font-face {
+  font-family: 'Silkscreen';
+  src: url('assets/fonts/Silkscreen-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%; height: 100%;
+  background-color: #000;
+  color: #fff;
+  font-family: 'Silkscreen', monospace;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.fade-container {
+  text-align: center;
+  opacity: 0; /* start invisible */
+}
+
+/* main menu logo */
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 4rem;
+  user-select: none;
+}
+.logo-top {
+  align-items: center;
+  font-family: 'Doto', sans-serif;
+  font-weight: 300;
+  letter-spacing: 4px;
+  font-size: calc(7rem + 5vw);
+  color: rgb(255, 255, 255);
+}
+.logo-bottom {
+    font-family: 'Jersey 10', sans-serif;
+    font-size: calc(7rem + 4vw);
+    color: rgb(255, 255, 255);
+    user-select: none;
+    margin-top: calc(-2rem - 2vw);
+}
+
+#disclaimer {
+  user-select: none;
+  max-width: 700px;
+  line-height: 1.4;
+  margin: 0 auto;
+}
+#disclaimer h1 {
+    font-family: 'Silkscreen', sans-serif;
+    font-size: calc(3rem + 2vw);
+    letter-spacing: 4px;
+    color: rgb(255, 255, 255);
+    user-select: none;
+}
+#disclaimer h2 {
+    font-family: 'Silkscreen', sans-serif;
+    font-size: calc(1rem + 2vw);
+    letter-spacing: 3px;
+    color: rgb(107, 216, 158);
+    user-select: none;
+}
+#disclaimer span {
+    font-family: 'Silkscreen', sans-serif;
+    font-size: calc(2rem + 2vw);
+    color: rgb(255, 49, 98);
+    user-select: none;
+}
+#disclaimer p {
+    font-family: 'Silkscreen', sans-serif;
+    font-size: calc(1rem + 1vw);
+    letter-spacing: 2px;
+    color: rgb(255, 255, 255);
+    user-select: none;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.fade-in {
+  animation: fadeIn 1s forwards;
+}
+.fade-out {
+  animation: fadeOut 1s forwards;
+}

@@ -1,0 +1,61 @@
+/* css/countdown-style.css */
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@font-face {
+  font-family: 'Doto';
+  src: url('../assets/fonts/Doto-Regular.ttf') format('truetype');
+  font-weight: var();
+  font-style: var();
+}
+@font-face {
+  font-family: 'Yarndings12-Regular';
+  src: url('../assets/fonts/Yarndings12-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* 2) Dim overlay atop the night sky while counting down */
+body.overlay::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 3) Countdown text: start hidden/scaled-down */
+#countdownText {
+  user-select: none;
+  font-family: 'Doto';
+  font-style: Black;
+  font-size: calc(50rem + 10vw);
+  color: rgba(255, 49, 98, 0.8);
+  transition: transform 1s ease, opacity 1s ease;
+  text-shadow: rgba(255, 49, 98, 0.9);;
+  transform: scale(0);
+  opacity: 0;
+  animation: pulse 1s infinite ease-in-out;
+  z-index: 2; /* above the overlay */
+}
+
+/* 4) When .show-count is toggled on, scale up & fade in */
+#countdownText.show-count {
+  transform: scale(1);
+  opacity: 1;
+}

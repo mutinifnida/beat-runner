@@ -1,0 +1,119 @@
+<!--main-menu-screen.html-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Beat Runner</title>
+
+  <!-- screen‐specific styles -->
+<link rel="stylesheet" href="../css/screen-style.css" />
+
+</head>
+<body class="overlay">
+  <!-- Night Sky background -->
+  <canvas id="night-sky-canvas" class="canvas-background"></canvas>
+  <!-- Mute/unmute icon -->
+  <canvas id="muteIcon" class="mute-icon" width="36" height="36"></canvas>
+  
+  <div id="game">
+    <!-- Main Menu -->
+    <div class="screen" id="mainMenuScreen">
+      <div class="logo">
+        <div class="logo-top">BEAT</div>
+        <div class="logo-bottom">RUNNER</div>
+      </div>
+    <!-- hover caption -->
+     <!-- <p id="start-btn-hoverCaption">START THE GAME</p> -->
+      
+      <button class="start-btn" onclick="startGameSequence()">»PLAY</button>
+      <div class="menu-buttons">
+        <!-- <button class="menu-btn" onclick="showScreen('optionsScreen')">OPTIONS</button> -->
+        <button class="menu-btn">OPÇÕES</button>
+        <!-- <button class="menu-btn" onclick="showScreen('profileScreen')">PROFILE</button> -->
+        <button class="menu-btn">PERFIL</button>
+        <!-- <button class="menu-btn" onclick="showScreen('ranksScreen')">RANKS</button> -->
+        <button class="menu-btn">RANKING</button>
+        <!-- <button class="menu-btn" onclick="showScreen('aboutScreen')">ABOUT</button> -->
+        <button class="menu-btn">SOBRE</button>
+        <button class="quit-btn" onclick="window.close()">x</button>
+      </div>
+    </div>
+    
+
+    <!-- Sub‐screens -->
+    <div class="screen" id="optionsScreen">
+      <h2>OPTIONS</h2>
+          <!-- 1) Music Toggle -->
+    <div class="option-row">
+      <label for="musicToggle">Music</label>
+      <div class="toggle-switch">
+        <input type="checkbox" id="musicToggle" />
+        <span class="slider"></span>
+      </div>
+    </div>
+
+    <!-- 2) SFX Toggle -->
+    <div class="option-row">
+      <label for="sfxToggle">SFX</label>
+      <div class="toggle-switch">
+        <input type="checkbox" id="sfxToggle" />
+        <span class="slider"></span>
+      </div>
+    </div>
+
+    <!-- 3) Volume Slider + Number Input -->
+    <div class="option-row volume-row">
+      <label for="volumeRange">Volume</label>
+      <input type="range" id="volumeRange" min="0" max="100" value="75" />
+      <input type="number" id="volumeNumber" min="0" max="100" value="75" />
+      <span class="percent-sign">%</span>
+    </div>
+
+    <!-- 4) Language Selector -->
+    <div class="option-row">
+      <label>Language</label>
+      <div class="radio-group">
+        <label><input type="radio" name="language" value="en" /> English</label>
+        <label><input type="radio" name="language" value="pt" /> Português (BR)</label>
+        <label><input type="radio" name="language" value="es" /> Español</label>
+      </div>
+    </div>
+
+    <!-- 5) Auto-save Toggle (UI only for now) -->
+    <div class="option-row">
+      <label for="autoSaveToggle">Auto-Save</label>
+      <div class="toggle-switch">
+        <input type="checkbox" id="autoSaveToggle" />
+        <span class="slider"></span>
+      </div>
+    </div>
+
+    <!-- 6) Save & Return button -->
+    <!-- <button id="saveBtn" class="menu-btn">Save & Return</button>
+  </div> -->
+      <button class="menu-btn" onclick="returnToMenu()">Back</button>
+    </div>
+    <div class="screen" id="profileScreen">
+      <h2>PROFILE</h2>
+      <p>Your profile stats will be displayed here.</p>
+      <button class="menu-btn" onclick="returnToMenu()">Back</button>
+    </div>
+    <div class="screen" id="ranksScreen">
+      <h2>RANKS</h2>
+      <p>Top player scores will be displayed here.</p>
+      <button class="menu-btn" onclick="returnToMenu()">Back</button>
+    </div>
+    <div class="screen" id="aboutScreen">
+      <h2>ABOUT</h2>
+      <p>This is a precision-based reaction game.</p>
+      <button class="menu-btn" onclick="returnToMenu()">Back</button>
+    </div>
+
+    <div class="footer">© 2025 Beat Runner. Todos os direitos reservados.</div>
+  </div>
+
+  <!-- UI logic (background, audio, navigation) -->
+  <script type="module" src="../js/main-menu-ui.js" defer></script>
+</body>
+</html>

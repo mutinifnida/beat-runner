@@ -1,0 +1,412 @@
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@font-face {
+  font-family: 'Doto-Regular';
+  src: url('../assets/fonts/Doto-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Doto-Medium';
+  src: url('../assets/fonts/Doto-Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Doto-Bold';
+  src: url('../assets/fonts/Doto-Bold.ttf') format('truetype');
+}
+
+html, body {
+    background-color: rgb(0, 0, 0);
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+/* remove the old static background on .overlay */
+.overlay {
+  background: none;
+}
+
+/* make the overlay a full-screen pseudo-element */
+body.overlay {
+  position: relative;        /* establish a positioning context */
+}
+body.overlay::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1;                /* sit above the canvas (z-0) */
+  pointer-events: none;      /* clicks pass through to canvas/UI */
+}
+
+#gameCanvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* and push your UI above the overlay */
+#game {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.screen {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* Countdown */
+#countdownScreen {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#countdownText {
+  user-select: none;
+  font-family: 'Doto', sans-serif;
+  font-weight: Bold;
+  font-size: calc(20rem + 10vw);
+  color: rgb(107, 216, 158);
+  transition: all 0.5s ease;
+}
+
+.title {
+      user-select: none;
+      font-family: 'Silkscreen', sans-serif;
+      font-weight: 700;
+      font-size: calc(5rem + 3vw);
+      margin: 0;
+      transition: transform 0.3s ease, color 0.3s ease;
+      margin-bottom: 5rem;
+    }
+    .title:hover {
+      transform: scale(1.05);
+      color: rgb(107, 216, 158);
+    }
+
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 3rem;
+}
+
+.logo-top {
+  font-family: 'Doto', sans-serif;
+  font-weight: 300;
+  letter-spacing: 4px;
+  font-size: calc(7rem + 5vw);
+  color: rgb(255, 255, 255);
+  user-select: none;
+}
+
+.logo-bottom {
+    font-family: 'Jersey 10', sans-serif;
+    font-size: calc(7rem + 4vw);
+    color: rgb(255, 255, 255);
+    user-select: none;
+    margin-top: calc(-2rem - 2vw);
+}
+
+.logo:hover .logo-top,
+    .logo:hover .logo-bottom {
+      color: rgb(107, 216, 158);
+      transition: all 0.3s ease;
+    }
+
+.footer {
+    user-select: none;
+    font-family: 'Silkscreen', sans-serif;
+    font-weight: 500;
+    letter-spacing: 4px;
+    position: absolute;
+    bottom: 1rem;
+    color: rgb(107, 216, 158);
+    font-size: 0.6rem;
+}
+
+.start-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: calc(21.2rem + 8vw);
+    height: calc(3rem + 1.8vw);
+    user-select: none;
+    font-family: 'Silkscreen', sans-serif;
+    font-size: calc(1.3rem + 0.5vw);
+    padding: 0.9rem 2.5rem;
+    background: transparent;
+    color: rgb(107, 216, 158);
+    border: 2px solid rgb(107, 216, 158);
+    border-radius: 0;
+    letter-spacing: 7px;
+    font-weight: 400;
+    text-transform: uppercase;
+    box-shadow: 0 0 10px 2px rgba(107, 216, 158, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: calc(10rem + 1vw);
+}
+.start-btn:hover {
+    width: calc(21.2rem + 8vw);
+    height: calc(3rem + 1.8vw);
+    background: rgba(255, 49, 98, 0.4);
+    box-shadow: 0 0 20px 4px rgba(255, 49, 98, 0.5);
+    border-color: rgb(255, 49, 98);
+    padding: 0.9rem 2.5rem;
+    font-weight: 700;
+    font-size: calc(1.2rem + 0.5vw);
+    letter-spacing: 5px;
+    color: rgb(255, 49, 98);
+}
+.menu-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.menu-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: calc(10rem + 4vw);
+    height: calc(1.8rem + 1.8vw);
+    user-select: none;
+    font-family: 'Silkscreen', sans-serif;
+    font-size: calc(0.6rem + 0.4vw);
+    padding: 0.2rem 1rem;
+    background: transparent;
+    color: #fff;
+    border: 1.5px solid #fff;
+    border-radius: 0;
+    letter-spacing: 6px;
+    font-weight: 400;
+    text-transform: uppercase;
+    box-shadow: 0 0 4px 1px rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.menu-btn:hover {
+  width: calc(10rem + 4vw);
+  height: calc(1.8rem + 1.8vw);
+  background: rgba(255, 49, 98, 0.1);
+  box-shadow: 0 0 10px 2px rgba(255, 49, 98, 0.4);
+  border-color: rgb(255, 49, 98);
+  font-weight: 700;
+  font-size: calc(0.5rem + 0.3vw);
+  letter-spacing: 6px;
+  color: rgb(255, 49, 98);
+}
+.caption {
+  pointer-events: none;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Doto', sans-serif;
+  font-size: 14px;
+  margin-top: -1rem;
+  margin-bottom: 2rem;
+}
+/* butonn caption hover */
+#hoverCaption {
+  pointer-events: none;
+  text-align: center;
+  color: rgb(255, 255, 255);
+  font-family: 'Doto-Regular', sans-serif;
+  font-size: calc(0.7rem + 0.4vw);
+  letter-spacing: 2px;
+  margin-top: -2rem;
+  margin-bottom: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+/*Pause Screen style */
+#pauseMenu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+  #pauseMenu.show {
+  opacity: 1;
+  pointer-events: auto;
+  }
+
+#pauseTitle {
+  pointer-events: none;
+  text-align: center;
+  margin-bottom: 6rem;
+  margin-top: 8rem;
+  animation: pulse 1s infinite ease-in-out;
+}
+#pauseTitle h1 {
+  margin: 0;
+  font-family: 'Silkscreen', sans-serif;
+  font-size: clamp(6rem, 8vw, 12rem);
+  color: rgb(255, 49, 98);
+  letter-spacing: 4px;
+}
+#pauseTitle p {
+  pointer-events: none;
+  text-align: center;
+  color: rgba(255, 49, 98, 1);
+  font-family: 'Doto-Medium', sans-serif;
+  font-size: calc(0.8rem + 0.4vw);
+  letter-spacing: 2px;
+
+}
+#pauseTitle span {
+  pointer-events: none;
+  text-align: center;
+  color: rgba(255, 49, 98, 1);
+  font-family: 'Doto-Bold', sans-serif;
+  font-size: calc(0.8rem + 0.4vw);
+  letter-spacing: 2px;
+}
+/*Game Over style */
+#gameOverMenu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  z-index: 10;
+}
+#gameOverMenu.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+#gameOverTitle {
+  pointer-events: none;
+  text-align: center;
+  margin-bottom: 6rem;
+  margin-top: 8rem;
+  animation: pulse 1s infinite ease-in-out;
+}
+#gameOverTitle h1 {
+  margin: 0;
+  font-family: 'Silkscreen', sans-serif;
+  font-size: clamp(3rem, 6vw, 8rem);
+  color: rgb(255, 49, 98);
+  letter-spacing: clamp(8px, 1.5vw, 16px);
+}
+#gameOverTitle p{
+  pointer-events: none;
+  font-family: 'Silkscreen', sans-serif;
+  font-size: clamp(0.8rem, 1.2vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: clamp(1px, 1vw, 4px);
+  color: rgb(255, 255, 255);
+  margin: 0.2rem 0 2rem 0;
+}
+
+
+#gameStats {
+  pointer-events: none;
+  text-align: left;
+  color: rgba(255, 255, 255, 1);
+  line-height: 2rem;
+  margin-bottom: 4rem;
+}
+#gameStats p {
+  pointer-events: none;
+  font-family: 'Doto', sans-serif;
+  font-weight: light;
+  font-size: clamp(2rem, 2.4vw, 3.2rem);
+}
+#gameStats span {
+  pointer-events: none;
+  font-family: 'Doto', sans-serif;
+  font-weight: bold;
+  font-size: clamp(2rem, 2.4vw, 3.2rem);
+  color: rgb(107, 216, 158);
+  font-weight: 700;
+}
+
+/* Fade‐in/fade‐out transitions for full page */
+body {
+  opacity: 0;
+  transition: opacity 0.01s ease;
+}
+
+body.fade-in {
+  opacity: 1;
+}
+
+body.fade-out {
+  opacity: 0;
+}
+
+/* Ensure overlay & canvas layering still works */
+canvas {
+  z-index: 0;
+}
+body.overlay::before {
+  /* existing overlay styles… */
+  z-index: 1;
+}
+#game {
+  z-index: 2;
+}
+
+#muteButton {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  z-index: 2;       /* above the overlay (z-1) but below UI (z-2) */
+}
+
+/* pixel-art mute/unmute icon */
+#muteIcon {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  z-index: 3;    /* ABOVE #game (which is 2) */
+  cursor: pointer;         /* show clickability */
+}

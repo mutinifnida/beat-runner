@@ -1,0 +1,1004 @@
+<!--game-screen.html-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beat Runner</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script type="module" src="../js/game-song.js" defer></script>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+
+<!--Pause Menu-->
+  <div id="pauseMenu" style="display: none;">
+      <div id="pauseTitle">
+        <h1>||</h1>
+        <p>APERTE <span>ESPAÇO</span> PARA VOLTAR</p>
+      </div>
+        <p id="hoverCaption">*TODO O PROGRESSO ATUAL SERÁ PERDIDO</p>
+        <button class="start-btn" id="backToMenu">MENU INICIAL</button>
+  <div class="menu-buttons">
+        <button class="menu-btn" id="options">OPÇÕES</button>
+        <button class="menu-btn" id="saveGame">SALVAR</button>
+  </div>
+  </div>
+
+<!--Game Over Menu-->
+    <div id="gameOverMenu">
+        <div id="gameOverTitle">
+        <h1>BEAT OVER</h1>
+        </div>
+        <div id="gameStats">
+            <p><span>* </span> PONTUAÇÃO: <span id="statScore"></span></p>
+            <p><span>* </span> MELHOR COMBO: <span id="statCombo"></span></p>
+            <p><span>* </span> ERROS: <span id="statMisses"></span></p>
+            <p><span>* </span> TEMPO GANHO: <span id="statTimeStretch"></span></p>
+        </div>
+
+  <button class="start-btn" id="gameOverBackToMenu">MENU INICIAL</button>
+  </div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  window.addEventListener('DOMContentLoaded', () => {document.body.classList.add('fade-in');});
+        
+// Kick off the soundtrack
+  document.addEventListener('DOMContentLoaded', () => {
+  document.body.addEventListener('click', () => {
+    if (window.audioCtx?.state === 'suspended') window.audioCtx.resume();}, { once: true });window.initGameSong();});
+
+    const STAR_COUNT = 200;
+    const STAR_MIN_SIZE = 0.5;
+    const STAR_MAX_SIZE = 2.5;
+    const STAR_BASE_OPACITY_MIN = 0.6;
+    const STAR_BASE_OPACITY_MAX = 1.0;
+    const STAR_TWINKLE_SPEED_MIN = 0.01;
+    const STAR_TWINKLE_SPEED_MAX = 0.03;
+    const STAR_TWINKLE_AMPLITUDE = 0.9;
+
+    const stars = [];
+    const clouds = [];
+    const glyphChars = ['w', 'x', 'h', 'c', 'l'];
+    const glyphs = [];
+    const particles = [];
+    const clickEffects = [];
+    const floatingTexts = [];
+    const timeFloatingTexts = [];
+
+// Mute Button starts "muted"
+let isMuted = true;
+
+const muteButtonArea = {
+    x: 20,
+    y: canvas.height - 56,
+    width: 36,
+    height: 36
+};
+
+function updateMuteButtonPosition() {
+    muteButtonArea.x = 20;
+    muteButtonArea.y = canvas.height - muteButtonArea.height - 20;
+}
+window.addEventListener('resize', updateMuteButtonPosition);
+
+// Game Pause State
+let isPaused = false;
+
+let isGameOver = false;
+let missedHits = 0;
+
+const pauseMenu = document.getElementById('pauseMenu');
+const hoverCaption = document.getElementById('hoverCaption');
+const backToMenuBtn = document.getElementById('backToMenu');
+backToMenuBtn.addEventListener('mouseenter', () => {
+    hoverCaption.style.opacity = 1;
+});
+backToMenuBtn.addEventListener('mouseleave', () => {
+    hoverCaption.style.opacity = 0;
+});
+
+const optionsBtn = document.getElementById('options');
+const saveGameBtn = document.getElementById('saveGame');
+
+window.addEventListener('keydown', e => {
+    if (e.code === 'Space') {
+        isPaused = !isPaused;
+        if (isPaused) {
+    pauseMenu.style.display = 'flex';
+    audioCtx.suspend();
+} else {
+    pauseMenu.style.display = 'none';
+    audioCtx.resume();
+}
+
+    }});
+
+backToMenuBtn.onclick = () => {
+    window.location.href = 'main-menu-screen.html'; // Or whatever your menu page is
+};
+
+optionsBtn.onclick = () => {
+    alert('options-screen.html');
+};
+
+saveGameBtn.onclick = () => {
+    alert('Game Saved! (Stub Function)');
+};
+
+let flashOpacity = 0;
+let shakeAmplitude = 0;
+let score = 0;
+let comboHits = 0;
+let comboUniqueGlyphs = new Set();
+let comboMultiplier = 1;
+let lastSuccessfulHitTime = null;
+let lastClickTime = performance.now();
+let scoreFlashColor = null;
+let scorePulse = 0;
+let comboPulse = 0;
+let timerPulse = 0;
+
+let bestComboHits = 0;
+let timerStretchTotal = 0;
+
+const soundWave = Array.from({ length: 16 }, () => Math.random());
+let gameStarted = true;
+
+let gameTimer = 60.00;
+setInterval(() => {
+    if (gameStarted && gameTimer > 0 && !isPaused && !isGameOver) {
+        gameTimer -= 0.01;
+        gameTimer = Math.max(gameTimer, 0);
+        if (gameTimer === 0) triggerGameOver();
+    }
+}, 10);
+
+function formatTimer(time) {
+    const minutes = String(Math.floor(time / 60)).padStart(2, '0');
+    const seconds = String(Math.floor(time % 60)).padStart(2, '0');
+    const centiseconds = String(Math.floor((time % 1) * 100)).padStart(2, '0');
+    return `${minutes}:${seconds}:${centiseconds}`;
+}
+
+// Glyph Notes
+const noteFrequencies = {
+    'w': 466.16,  // A#4
+    'x': 440,  // A4
+    'h': 391.99,  // G4
+    'c': 349.22,  // F4
+    'l': 328.62   // E4
+};
+// Glyph Sounds Logic
+function playNoteForGlyph(glyphChar) {
+    const baseFreq = noteFrequencies[glyphChar] || 440;
+    const riffIntervals = [0]; // Root, Major Third, Perfect Fifth
+    const noteDuration = 3; // Duration of each note
+    const delayBetweenNotes = -1.9; // Gap between notes
+    const vibratoSpeed = 70;
+    const vibratoDepth = 5;
+
+    const now = audioCtx.currentTime;
+    const vibrato = audioCtx.createOscillator();
+    const vibratoGain = audioCtx.createGain();
+
+    vibrato.frequency.setValueAtTime(vibratoSpeed, now);
+    vibratoGain.gain.setValueAtTime(vibratoDepth, now);
+    vibrato.connect(vibratoGain);
+
+    riffIntervals.forEach((interval, idx) => {
+        const startTime = now + idx * (noteDuration + delayBetweenNotes);
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        const freq = baseFreq * Math.pow(2, interval / 12);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+
+        vibratoGain.connect(osc.frequency);
+
+        gainNode.gain.setValueAtTime(0.0001, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.2, startTime + 0.1);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + noteDuration);
+
+        osc.connect(gainNode).connect(audioCtx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + noteDuration);
+    });
+
+    const riffEnd = now + riffIntervals.length * (noteDuration + delayBetweenNotes);
+    vibrato.start(now);
+    vibrato.stop(riffEnd);
+}
+
+// Missed Hit Sound
+function playMissClickSound() {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(35, audioCtx.currentTime);
+    gain.gain.setValueAtTime(100, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 1);
+}
+
+// Stars and Clouds
+function randomCloudColor() {
+            const r1 = 13, g1 = 63, b1 = 81;
+            const r2 = 73, g2 = 119, b2 = 215;
+            const t = Math.random();
+            return {
+                r: Math.floor(r1 + (r2 - r1) * t),
+                g: Math.floor(g1 + (g2 - g1) * t),
+                b: Math.floor(b1 + (b2 - b1) * t)
+            };
+        }
+
+function randomStarColor() {
+            const r1 = 255, g1 = 240, b1 = 151;
+            const r2 = 255, g2 = 255, b2 = 255;
+            const t = Math.random();
+            return {
+                r: Math.floor(r1 + (r2 - r1) * t),
+                g: Math.floor(g1 + (g2 - g1) * t),
+                b: Math.floor(b1 + (b2 - b1) * t)
+            };
+        }
+
+// Score Calculation
+function calculateScore(distance, glyphSize, reactionTime) {
+    const precisionMultiplier = 1 - (distance / (glyphSize / 2 + 10));
+    const speedMultiplier = Math.max(0.5, 2 - reactionTime / 1000);
+    const basePoints = 100;
+    const total = Math.floor(basePoints * precisionMultiplier * speedMultiplier);
+    return Math.max(total, 10);
+}
+
+// Combo Caculations
+function updateCombo(glyphChar) {
+    const now = performance.now();
+
+    if (lastSuccessfulHitTime && now - lastSuccessfulHitTime > 4000) {
+        comboHits = 0;
+        comboUniqueGlyphs.clear();
+        comboMultiplier = 1;
+    }
+
+    lastSuccessfulHitTime = now;
+    comboHits++;
+    bestComboHits = Math.max(bestComboHits, comboHits); // ← update record
+    comboUniqueGlyphs.add(glyphChar);
+
+    comboMultiplier = 1;
+
+    if (comboHits === 5) {
+        gameTimer += 2; // 🔥 Add 2 seconds at 5 hits
+        timerStretchTotal += 2;        // ← record “+2” in the final stat
+        timeFloatingTexts.push(new TimeFloatingText('+2 segundos'));
+        floatingTexts.push(new FloatingText('+2 segundos', 60, 90, {r: 107, g: 216, b: 158}));
+    }
+    if (comboHits === 10) {
+        gameTimer += 5; // 🔥 Add 5 seconds at 10 hits
+        timerStretchTotal += 5;        // ← record “+5” in the final stat
+        timeFloatingTexts.push(new TimeFloatingText('+5 segundos'));
+        floatingTexts.push(new FloatingText('+3 segundos', 60, 90, {r: 107, g: 216, b: 158}));
+        // Milestone at 10 → big "10 HITS!" in blue
+        milestoneTexts.push(new MilestoneText('10 HITS!', { r: 73, g: 119, b: 215 }));
+    }
+
+    if (comboHits === 20) {
+        gameTimer += 12; // 🔥 Add 12 seconds at 20 hits
+        timerStretchTotal += 12;       // ← record “+12” in the final stat
+        timeFloatingTexts.push(new TimeFloatingText('+12 segundos'));
+        floatingTexts.push(new FloatingText('+12 segundos', 60, 90, {r: 107, g: 216, b: 158}));
+        // Milestone at 20 → big "20 HITS!" in purple
+        milestoneTexts.push(new MilestoneText('20 HITS!', { r: 68, g: 43, b: 119 }));
+    }
+    if (comboHits === 50) {
+        gameTimer += 20; // 🔥 Add 20 seconds at 50 hits
+        timerStretchTotal += 20;       // ← record “+20” in the final stat
+        timeFloatingTexts.push(new TimeFloatingText('+20 segundos'));
+        floatingTexts.push(new FloatingText('+20 segundos', 60, 90, {r: 107, g: 216, b: 158}));
+        // Milestone at 50 → big "50 HITS!" in orange
+        milestoneTexts.push(new MilestoneText('50 HITS!', { r: 204, g: 102, b: 51 }));
+    }
+    if (comboHits === 100) {
+        gameTimer += 30; // 🔥 Add 30 seconds at 100 hits
+        timerStretchTotal += 30;       // ← record “+20” in the final stat
+        timeFloatingTexts.push(new TimeFloatingText('+30 segundos'));
+        floatingTexts.push(new FloatingText('+30 segundos', 60, 90, {r: 107, g: 216, b: 158}));
+        // Milestone at 100 → big "100 HITS!" in yellow
+        milestoneTexts.push(new MilestoneText('100 HITS!', { r: 255, g: 230, b: 105 }));
+    }
+    
+// Combo Multiplier Update
+    if (comboHits >= 5) comboMultiplier += 0.5;
+    if (comboHits >= 10) comboMultiplier += 1;
+    if (comboHits >= 25) comboMultiplier += 1.5;
+    if (comboHits >= 50) comboMultiplier += 2.5;
+    if (comboHits >= 100) comboMultiplier += 10;
+
+    const uniqueBonus = Math.floor(comboUniqueGlyphs.size / 5) * 10;
+    comboMultiplier += uniqueBonus;
+
+    gameTimer += 0;
+}
+
+// Background Resizing
+function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            stars.length = 0;
+            clouds.length = 0;
+            glyphs.length = 0;
+            particles.length = 0;
+            initStars();
+            const count = Math.floor(Math.random() * (16 - 3 + 1)) + 8;
+            for (let i = 0; i < count; i++) clouds.push(new Cloud());
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        class Star {
+            constructor() {
+                this.color = randomStarColor();
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * (STAR_MAX_SIZE - STAR_MIN_SIZE) + STAR_MIN_SIZE;
+                this.baseOpacity = Math.random() * (STAR_BASE_OPACITY_MAX - STAR_BASE_OPACITY_MIN) + STAR_BASE_OPACITY_MIN;
+                this.twinklePhase = Math.random() * Math.PI * 2;
+                this.twinkleSpeed = Math.random() * (STAR_TWINKLE_SPEED_MAX - STAR_TWINKLE_SPEED_MIN) + STAR_TWINKLE_SPEED_MIN;
+                this.twinkleAmplitude = STAR_TWINKLE_AMPLITUDE;
+            }
+            update() {
+                this.twinklePhase += this.twinkleSpeed;
+            }
+            draw() {
+                const opacity = Math.max(0, Math.min(1, this.baseOpacity + Math.sin(this.twinklePhase) * this.twinkleAmplitude));
+                ctx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${opacity})`;
+                ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+            }
+        }
+
+        class Cloud {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.scale = 0.1 + Math.random() * 0.3;
+                this.opacity = Math.random() * 0.7 + 0.1;
+                this.speed = (Math.random() * 0.05 + 0.01) * (Math.random() < 0.5 ? -1 : 1);
+                this.color = randomCloudColor();
+                this.squares = Array.from({ length: 23 }, (_, i) => ({
+                    dx: [-190, -150, -110, -70, -30, 10, 60, 100, 140, 70, 30, -10, -50][i] + (Math.random() * 40 - 20),
+                    dy: [10, -15, 0, -20, -20, -5, 10, 5, 5, 25, 30, 35, 35][i] + (Math.random() * 20 - 10),
+                    size: [70, 85, 100, 120, 120, 90, 70, 60, 60, 60, 50, 50, 50][i] + (Math.random() * 20 - 10)
+                }));
+            }
+            update() {
+                this.x += this.speed;
+                if (this.x > canvas.width + 200) this.x = -200;
+                if (this.x < -200) this.x = canvas.width + 200;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.opacity})`;
+                this.squares.forEach(sq => {
+                    ctx.fillRect(
+                        this.x + sq.dx * this.scale - (sq.size * this.scale) / 2,
+                        this.y + sq.dy * this.scale - (sq.size * this.scale) / 2,
+                        sq.size * this.scale,
+                        sq.size * this.scale
+                    );
+                });
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 10 + 2;
+                this.speedX = (Math.random() - 0.5) * 1.5;
+                this.speedY = (Math.random() - 0.5) * 1.5;
+                this.opacity = 1;
+                this.color = color;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.opacity -= 0.010;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.opacity})`;
+                ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+            }
+        }
+
+class FloatingText {
+    constructor(text, x, y, color = {r: 107, g: 216, b: 158}) {
+        this.text = text;
+        this.x = x;
+        this.y = y;
+        this.opacity = 1;
+        this.lift = 0;
+        this.color = color;
+    }
+    update() {
+        this.lift -= 0.1;
+        this.opacity -= 0.02;
+    }
+    draw() {
+        ctx.font = '28px "Doto", sans-serif';
+        ctx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.opacity})`;
+        ctx.textAlign = 'center';
+        ctx.fillText(this.text, this.x, this.y + this.lift);
+    }
+}
+
+class ClickEffect {
+    constructor(x, y, radius, color) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.color = color;
+        this.opacity = 1;
+        this.scale = 1;
+    }
+    update() {
+        this.scale += 0.05;
+        this.opacity -= 0.03;
+    }
+    draw() {
+        if (this.opacity <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        const pixelSize = 6 * this.scale;
+        for (let angle = 0; angle < 360; angle += 10) {
+            const rad = angle * Math.PI / 180;
+            const px = this.x + Math.cos(rad) * this.radius * this.scale;
+            const py = this.y + Math.sin(rad) * this.radius * this.scale;
+            ctx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.opacity})`;
+            ctx.fillRect(px - pixelSize / 2, py - pixelSize / 2, pixelSize, pixelSize);
+        }
+        ctx.restore();
+    }
+}
+
+class Glyph {
+    constructor() {
+    this.char = glyphChars[Math.floor(Math.random() * glyphChars.length)];
+                
+    const hudPaddingLeft = 160;     // Top-left HUD (score, combo)
+    const hudPaddingTop = 200;
+    const mutePaddingBottom = 100;  // Bottom-left mute
+    const soundwavePaddingBottom = 120; // Bottom-center soundwave
+    const safePadding = 40;         // Edge safety
+
+do {
+    this.x = Math.random() * (canvas.width - safePadding * 2) + safePadding;
+    this.y = Math.random() * (canvas.height - safePadding * 2) + safePadding;
+} while (
+    (this.x < hudPaddingLeft && this.y < hudPaddingTop) ||                           // Top-left HUD
+    (this.x < hudPaddingLeft && this.y > canvas.height - mutePaddingBottom) ||        // Bottom-left mute
+    (this.y > canvas.height - soundwavePaddingBottom && Math.abs(this.x - canvas.width / 2) < 180) // Bottom-center soundwave
+);
+
+                this.size = 40 + Math.random() * 70;
+                this.opacity = 0;
+                this.fadeSpeed = 0.02 + Math.random() * 0.02;
+                this.life = 150 + Math.random() * 200;
+                this.state = 'fadeIn';
+                this.floatSpeedX = (Math.random() - 0.1) * 0.1; // Small horizontal drift
+                this.floatSpeedY = (Math.random() - 0.1) * 0.1; // Small vertical drift
+                this.glowPhase = Math.random() * Math.PI * 2;
+                this.glowSpeed = 0.15 + Math.random() * 0.03;
+                this.glowAmplitude = 0.8;
+                this.flashOpacity = 0;
+                this.missed = false;
+            }
+            update() {
+                this.glowPhase += this.glowSpeed;
+                this.x += this.floatSpeedX;
+                this.y += this.floatSpeedY;
+
+                // Boundary checks to prevent drifting off-screen
+                this.x = Math.max(40, Math.min(canvas.width - 40, this.x));
+                this.y = Math.max(40, Math.min(canvas.height - 40, this.y));
+
+                if (this.state === 'fadeIn') {
+                    this.opacity += this.fadeSpeed;
+                    if (this.opacity >= 0.5) {
+                        this.opacity = 0.5;
+                        this.state = 'alive';
+                    }
+                
+                } else if (this.state === 'alive') {
+                    this.life--;
+                    if (this.life <= 0) {
+                        this.state = 'fadeOut';
+                        this.missed = true;
+                        this.flashOpacity = 1;
+                    }
+                } else if (this.state === 'fadeOut') {
+                    this.opacity -= this.fadeSpeed;
+                    if (this.opacity <= 0) {
+                        const index = glyphs.indexOf(this);
+                        if (index > -1) glyphs.splice(index, 1);
+                    }
+                }
+                if (this.missed && this.flashOpacity > 0) {
+                    this.flashOpacity -= 0.03;
+                }
+            }
+            draw() {
+                const glow = (Math.sin(this.glowPhase) * 0.5 + 0.5) * this.glowAmplitude;
+                const effectiveOpacity = Math.max(0, Math.min(1, this.opacity + glow));
+
+                // If missed and flashing, keep the “miss” color
+                let baseColor;
+                if (comboHits >= 100) { baseColor = { r: 255, g: 204, b:   0 };  // yellow
+                }
+                else if (comboHits >= 50) { baseColor = { r: 255, g: 165, b:   0 };  // orange
+                }
+                else if (comboHits >= 20) { baseColor = { r: 128, g:   0, b: 128 };  // purple
+                }
+                else if (comboHits >= 10) { baseColor = { r:   0, g:   0, b: 255 };  // blue
+                }
+                else { baseColor = { r: 107, g: 216, b: 151 };  // default green
+                }
+                
+                let r, g, b;
+                if (comboHits >= 100) {         // Yellow
+                    r = 255; g = 230; b = 105;
+                }
+                else if (comboHits >= 50) {   // Orange
+                    r = 204; g = 102; b = 51;              
+                }
+                else if (comboHits >= 20) {   // Purple
+                    r = 68; g = 43; b = 119;
+                }
+                else if (comboHits >= 10) {   // Blue
+                    r =  73; g = 119; b = 215;
+                }
+                else {                       // Default green
+                    r = 107; g = 216; b = 151;
+                }
+ 
+            // If this glyph was “missed,” flash it red as before
+            const color = (this.missed && this.flashOpacity > 0)
+              ? `rgba(255, 49, 98, ${this.flashOpacity})`
+              : `rgba(${r}, ${g}, ${b}, ${effectiveOpacity})`;
+
+
+                ctx.save();
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = color;
+
+                const pixelSize = 6;
+                const radius = this.size / 2 + pixelSize;
+                ctx.fillStyle = color;
+                for (let angle = 0; angle < 360; angle += 10) {
+                    const rad = angle * Math.PI / 180;
+                    const px = this.x + Math.cos(rad) * radius;
+                    const py = this.y + Math.sin(rad) * radius;
+                    ctx.fillRect(px - pixelSize / 2, py - pixelSize / 2, pixelSize, pixelSize);
+                }
+
+                ctx.fillStyle = color;
+                ctx.font = `${this.size}px 'Yarndings 12'`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.char, this.x, this.y);
+
+                ctx.restore();
+            }
+        }
+
+        function drawBackgroundGradient() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, 'rgb(7, 7, 7)');
+            gradient.addColorStop(1, 'rgb(4, 22, 37)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function initStars() {
+            for (let i = 0; i < STAR_COUNT; i++) stars.push(new Star());
+        }
+
+        function spawnGlyphs() {
+            const count = Math.floor(Math.random() * 4) + 2;
+            for (let i = 0; i < count; i++) glyphs.push(new Glyph());
+        }
+
+        function triggerGameOver() {
+            isGameOver = true;
+            pauseMenu.style.display = 'none';
+            document.getElementById('statScore').innerText = score;
+            document.getElementById('statCombo').innerText = bestComboHits;
+            document.getElementById('statMisses').innerText = missedHits;
+            document.getElementById('statTimeStretch').innerText = `+${timerStretchTotal.toFixed(0)}s`;
+
+        gameOverMenu.classList.add('show');
+
+            audioCtx.suspend();
+        }
+
+        const gameOverMenu = document.getElementById('gameOverMenu');
+        const gameOverBackToMenu = document.getElementById('gameOverBackToMenu');
+
+    gameOverBackToMenu.onclick = () => {
+        audioCtx.resume();
+        window.location.href = 'main-menu-screen.html';
+    };
+
+        setInterval(() => {
+            if (!isPaused && !isGameOver) {
+                spawnGlyphs();
+            }
+        }, 2000);
+
+class TimeFloatingText {
+    constructor(text, color = {r: 107, g: 216, b: 158}) {
+        this.text = text;
+        this.x = canvas.width / 2;
+        this.y = canvas.height - 30;
+        this.opacity = 1;
+        this.lift = 0;
+        this.color = color;
+    }
+    update() {
+        this.lift -= 0.3;
+        this.opacity -= 0.01;
+    }
+    draw() {
+        ctx.font = '32px "Silkscreen", monospace';
+        ctx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.opacity})`;
+        ctx.textAlign = 'center';
+        ctx.fillText(this.text, this.x, this.y + this.lift);
+    }
+}
+
+class MilestoneText {
+  constructor(text, color = { r: 255, g: 255, b: 255 }) {
+    this.text = text;
+    this.x = canvas.width  / 2;
+    this.y = canvas.height / 2;
+    this.opacity = 0.5;   // semi-transparent
+    this.scale = 1.5;     // start large
+    this.color = color;
+  }
+  update() {
+    this.opacity -= 0.005;       // very slow fade
+    this.scale   += 0.002;       // very slow grow
+  }
+  draw() {
+    if (this.opacity <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = this.opacity;
+    ctx.fillStyle = `rgb(${this.color.r}, ${this.color.g}, ${this.color.b})`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `${Math.floor(80 * this.scale)}px "Silkscreen", monospace`;
+    ctx.fillText(this.text, this.x, this.y);
+    ctx.restore();
+  }
+}
+
+// And right after defining this class, create the array that will hold them:
+const milestoneTexts = [];
+
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Apply shake
+    const shakeX = (Math.random() - 0.5) * shakeAmplitude;
+    const shakeY = (Math.random() - 0.5) * shakeAmplitude;
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
+
+    drawBackgroundGradient();
+
+    if (isPaused) {
+    // Semi-transparent black overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    clouds.forEach(c => { c.draw(); c.update(); });
+    stars.forEach(s => { s.draw(); s.update(); });
+
+    if (!isPaused && !isGameOver) {
+
+    // ─── Draw any MilestoneText “10 HITS! / 20 HITS!” behind the glyphs ───
+    milestoneTexts.forEach((m, i) => {
+        m.update();
+        // Draw *before* glyphs so it appears behind
+        m.draw();
+        if (m.opacity <= 0) milestoneTexts.splice(i, 1);});
+
+    glyphs.forEach(g => { g.update(); });
+    particles.forEach((p, i) => {
+        p.update();
+        if (p.opacity <= 0) particles.splice(i, 1);
+    });
+    clickEffects.forEach((e, i) => {
+        e.update();
+        if (e.opacity <= 0) clickEffects.splice(i, 1);
+    });
+    floatingTexts.forEach((t, i) => {
+        t.update();
+        if (t.opacity <= 0) floatingTexts.splice(i, 1);
+    });
+    timeFloatingTexts.forEach((t, i) => {
+        t.update();
+        if (t.opacity <= 0) timeFloatingTexts.splice(i, 1);
+    });
+}
+
+    clouds.forEach(c => { c.draw(); });
+    stars.forEach(s => { s.draw(); });
+
+
+    glyphs.forEach(g => { g.draw(); });
+    particles.forEach((p, i) => { p.draw();
+        if (p.opacity <= 0) particles.splice(i, 1); });
+    clickEffects.forEach((e, i) => { e.draw();
+        if (e.opacity <= 0) clickEffects.splice(i, 1); });
+
+    // UI Drawing
+    ctx.font = '24px "Silkscreen", monospace';
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    if (timerPulse > 0) {
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height - 20);
+    const scale = 1 + 0.2 * timerPulse;
+    ctx.scale(scale, scale);
+    ctx.translate(-canvas.width / 2, -(canvas.height - 20));
+    ctx.font = '24px "Silkscreen", monospace';
+    ctx.fillStyle = 'white';
+    ctx.fillText(formatTimer(gameTimer), canvas.width / 2, canvas.height - 20);
+    
+    ctx.restore();
+    timerPulse -= 0.05;
+} else {
+    ctx.font = '32px "Silkscreen", monospace';
+    ctx.fillStyle = 'white';
+    ctx.fillText(formatTimer(gameTimer), canvas.width / 2, canvas.height - 20);
+}
+if (gameStarted) {
+    if (!isPaused && !isGameOver) {
+        for (let i = 0; i < soundWave.length; i++) {
+            soundWave[i] += (Math.random() * 0.4 - 0.2);
+            soundWave[i] = Math.max(0.2, Math.min(1, soundWave[i]));
+        }
+    }
+
+    const waveX = canvas.width / 2 - (soundWave.length * 8) / 2;
+    const waveY = canvas.height - 50;
+    soundWave.forEach((value, i) => {
+        const height = value * 20;
+        ctx.fillStyle = 'rgb(255, 49, 98)';
+        ctx.fillRect(waveX + i * 8, waveY - height, 6, height);
+    });
+}
+
+    ctx.font = '20px "Silkscreen", monospace';
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'left';
+    ctx.fillText('SCORE', 20, 40);
+    
+    let currentColor = 'white';
+if (scoreFlashColor) {
+    currentColor = `rgb(${scoreFlashColor.r}, ${scoreFlashColor.g}, ${scoreFlashColor.b})`;
+}
+if (scorePulse > 0) {
+    ctx.save();
+    ctx.translate(20, 70);
+    const scale = 1 + 0.2 * scorePulse;
+    ctx.scale(scale, scale);
+    ctx.translate(-20, -70);
+    ctx.font = '24px "Doto", sans-serif';
+    ctx.fillStyle = currentColor;
+    ctx.fillText(score, 20, 70);
+    ctx.restore();
+    scorePulse -= 0.05;
+    if (scorePulse <= 0) scoreFlashColor = null;
+} else {
+    ctx.font = '24px "Doto", sans-serif';
+    ctx.fillStyle = 'white';
+    ctx.fillText(score, 20, 70);
+}
+
+    ctx.font = '20px "Silkscreen", monospace';
+    ctx.fillStyle = 'white';
+    ctx.fillText('COMBO', 20, 100);
+    if (comboPulse > 0) {
+    ctx.save();
+    ctx.translate(20, 130);
+    const scale = 1 + 0.2 * comboPulse;
+    ctx.scale(scale, scale);
+    ctx.translate(-20, -130);
+    ctx.font = '24px "Doto", sans-serif';
+    ctx.fillStyle = 'rgb(73, 119, 215)';
+    ctx.fillText(`x${comboMultiplier.toFixed(1)}`, 20, 130);
+    ctx.restore();
+    comboPulse -= 0.05;
+} else {
+    ctx.font = '24px "Doto", sans-serif';
+    ctx.fillStyle = 'rgb(73, 119, 215)';
+    ctx.fillText(`x${comboMultiplier.toFixed(1)}`, 20, 130);
+}
+
+// draw the current hit combo count, fading out over 3 seconds
+if (comboHits > 1 && lastSuccessfulHitTime) {
+  const elapsed = performance.now() - lastSuccessfulHitTime;
+  if (elapsed < 3000) {
+    const alpha = 1 - elapsed / 3000;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = '24px "Doto", sans-serif';
+    ctx.fillStyle = 'rgb(255, 240, 151)';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${comboHits} HITS`, 20, 160);
+    ctx.restore();
+  }
+}
+
+    if (flashOpacity > 0) {
+        ctx.fillStyle = `rgba(255, 49, 98, ${flashOpacity})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        flashOpacity -= 0.05;
+    }
+
+    // Floating texts are also shaken
+    floatingTexts.forEach((t, i) => {
+        t.update();
+        t.draw();
+        if (t.opacity <= 0) floatingTexts.splice(i, 1);
+    });
+
+    timeFloatingTexts.forEach((t, i) => {
+    t.update();
+    t.draw();
+    if (t.opacity <= 0) timeFloatingTexts.splice(i, 1);
+});
+
+// Draw mute button (bottom-left)
+ctx.save();
+ctx.translate(muteButtonArea.x, muteButtonArea.y);
+
+// Note Shape – Larger Beam Note
+ctx.fillStyle = isMuted ? 'rgba(255, 255, 255, 0.2)' : 'white';
+
+// Beam (horizontal top line)
+ctx.fillRect(7, 4, 21, 7);
+
+// Stem 1
+ctx.fillRect(7, 8, 3, 16);
+
+// Stem 2
+ctx.fillRect(25, 8, 3, 16);
+
+// Note Head 1
+ctx.fillRect(0, 20, 8, 8);
+
+// Note Head 2 (double beam style)
+ctx.fillRect(18, 20, 8, 8);
+
+// X Overlay when muted – Bigger than the note itself
+if (isMuted) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.fillRect(0, 0, 4, 4);
+    ctx.fillRect(4, 4, 4, 4);
+    ctx.fillRect(8, 8, 4, 4);
+    ctx.fillRect(12, 12, 4, 4);
+    ctx.fillRect(16, 16, 4, 4);
+    ctx.fillRect(20, 20, 4, 4);
+    ctx.fillRect(24, 24, 4, 4);
+    ctx.fillRect(28, 28, 4, 4);
+}
+ctx.restore();
+
+ctx.restore();
+if (shakeAmplitude > 0) shakeAmplitude *= 0.9;
+
+    requestAnimationFrame(animate);
+}
+
+canvas.addEventListener('click', e => {
+    if (isPaused || isGameOver) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // ✅ Check if mute button is clicked first
+    if (
+        mouseX >= muteButtonArea.x &&
+        mouseX <= muteButtonArea.x + muteButtonArea.width &&
+        mouseY >= muteButtonArea.y &&
+        mouseY <= muteButtonArea.y + muteButtonArea.height
+    ) {
+        isMuted = !isMuted;
+        if (isMuted) {
+            audioCtx.suspend();
+        } else {
+            audioCtx.resume();
+        }
+        return; // ✅ Prevents click from triggering gameplay logic
+    }
+
+    // ✅ Gameplay click check starts here
+    let hit = false;
+    glyphs.forEach((glyph, index) => {
+        const distance = Math.sqrt((mouseX - glyph.x) ** 2 + (mouseY - glyph.y) ** 2);
+        const radius = glyph.size / 2 + 10;
+
+        if (distance <= radius) {
+            const now = performance.now();
+            const reactionTime = now - lastClickTime;
+            lastClickTime = now;
+
+            const points = calculateScore(distance, glyph.size, reactionTime);
+            updateCombo(glyph.char);
+            score += points + Math.floor(points * (comboMultiplier - 1));
+            scorePulse = 1;
+            scoreFlashColor = {r: 107, g: 216, b: 158};
+            comboPulse = 1;
+
+            floatingTexts.push(new FloatingText(`+${points}`, glyph.x - glyph.size * 0.5, glyph.y - glyph.size * 0.5));
+
+            if (!gameStarted) gameStarted = true;
+            playNoteForGlyph(glyph.char);
+            for (let i = 0; i < 20; i++) {
+                particles.push(new Particle(glyph.x, glyph.y, { r: 107, g: 216, b: 151 }));
+            }
+            clickEffects.push(new ClickEffect(glyph.x, glyph.y, glyph.size / 2 + 10, { r: 107, g: 216, b: 151 }));
+
+            glyphs.splice(index, 1);
+            hit = true;
+        }
+    });
+
+    // ✅ If no glyph was hit, handle miss
+if (!hit) {
+    missedHits++;
+    if (missedHits >= 10) {
+        triggerGameOver();
+    }
+
+    playMissClickSound();
+    comboHits = 0;
+    comboUniqueGlyphs.clear();
+    comboMultiplier = 0;
+    lastSuccessfulHitTime = null;
+    flashOpacity = 0.25;
+    shakeAmplitude = 10;
+
+    score = Math.max(0, score - 50);
+    scorePulse = 1;
+    scoreFlashColor = {r: 255, g: 49, b: 98};
+    floatingTexts.push(new FloatingText(`-50`, mouseX, mouseY, {r: 255, g: 49, b: 98}));
+
+    gameTimer = Math.max(0, gameTimer - 1);
+    timeFloatingTexts.push(new TimeFloatingText('-1 segundo', {r: 255, g: 49, b: 98}));
+
+}});
+
+resizeCanvas();
+animate();
+updateMuteButtonPosition();
+
+</script>
+</body>
+</html>
