@@ -36,7 +36,7 @@ export class NightSkyBackground {
   }
 
   _randomStarColor() {
-    const [r1, g1, b1] = [255, 240, 151];
+    const [r1, g1, b1] = [255, 230, 105];
     const [r2, g2, b2] = [255, 255, 255];
     const t = Math.random();
     return {
@@ -45,8 +45,8 @@ export class NightSkyBackground {
       b: Math.floor(b1 + (b2 - b1) * t),
     };
   }
-  _randomCloudColor() {
-    const [r1, g1, b1] = [13, 63, 81];
+  _randomCloudColor() { 
+    const [r1, g1, b1] = [68, 43, 112];
     const [r2, g2, b2] = [73, 119, 215];
     const t = Math.random();
     return {
@@ -126,15 +126,19 @@ export class NightSkyBackground {
     }
 
     // create instances
-    for (let i = 0; i < 100; i++) this.stars.push(new Star(this.ctx, this.canvas.width, this.canvas.height, () => this._randomStarColor()));
+    for (let i = 0; i < 200; i++) this.stars.push(new Star(this.ctx, this.canvas.width, this.canvas.height, () => this._randomStarColor()));
     const cloudCount = Math.floor(Math.random() * 4) + 3;
     for (let i = 0; i < cloudCount; i++) this.clouds.push(new Cloud(this.ctx, this.canvas.width, this.canvas.height, () => this._randomCloudColor()));
   }
 
   _drawBackgroundGradient() {
     const grad = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-    grad.addColorStop(0, 'rgb(7,7,7)');
-    grad.addColorStop(1, 'rgb(4,22,37)');
+    grad.addColorStop(0, 'rgb(7, 7, 7)');
+    grad.addColorStop(0.5, 'rgb(4, 22, 37)');
+    grad.addColorStop(0.7, 'rgb(13, 63, 81)');
+    grad.addColorStop(1, 'rgb(196, 116, 98)');
+    // grad.addColorStop(0, 'rgb(7,7,7)');
+    // grad.addColorStop(1, 'rgb(4,22,37)');
     this.ctx.fillStyle = grad;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
