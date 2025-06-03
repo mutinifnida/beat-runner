@@ -12,7 +12,22 @@
     opacity: 1;
   }
 }
-
+@font-face {
+  font-family: 'Yarndings12-Regular';
+  src: url('./assets/fonts/Yarndings12-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Jersey10-Regular';
+  src: url('./assets/fonts/Jersey10-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Silkscreen-Bold';
+  src: url('./assets/fonts/Silkscreen-Bold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Silkscreen-Regular';
+  src: url('./assets/fonts/Silkscreen-Regular.ttf') format('truetype');
+}
 @font-face {
   font-family: 'Doto-Regular';
   src: url('./assets/fonts/Doto-Regular.ttf') format('truetype');
