@@ -16,15 +16,15 @@ body.overlay {
 
 @font-face {
   font-family: 'Silkscreen';
-  src: url('../assets/fonts/Silkscreen-Regular.ttf') format('truetype');
+  src: url('./assets/fonts/Silkscreen-Regular.ttf') format('truetype');
 }
 @font-face {
   font-family: 'Doto';
-  src: url('../assets/fonts/Doto-VariableFont_ROND,wght.ttf') format('truetype');
+  src: url('./assets/fonts/Doto-VariableFont_ROND,wght.ttf') format('truetype');
 }
 @font-face {
   font-family: 'Yarndings 12';
-  src: url('../assets/fonts/Yarndings12.ttf') format('truetype');
+  src: url('./assets/fonts/Yarndings12.ttf') format('truetype');
 }
 
 html, body {

@@ -17,7 +17,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // 3) Once faded out, navigate to the Main Menu
     setTimeout(() => {
-      window.location.href = '/html/disclaimer.html';
+      window.location.href = './disclaimer.html';
     }, fadeOutDuration);
 
   }, fadeInDuration + displayDuration);

@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         document.body.classList.replace('fade-in', 'fade-out');
         setTimeout(() => {
-          window.location.href = '../html/game-screen.html';
+          window.location.href = './game-screen.html';
         }, 500);
       }, 1000);
     }

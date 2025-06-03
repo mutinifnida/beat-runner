@@ -15,15 +15,15 @@
 
 @font-face {
   font-family: 'Doto-Regular';
-  src: url('../assets/fonts/Doto-Regular.ttf') format('truetype');
+  src: url('./assets/fonts/Doto-Regular.ttf') format('truetype');
 }
 @font-face {
   font-family: 'Doto-Medium';
-  src: url('../assets/fonts/Doto-Medium.ttf') format('truetype');
+  src: url('./assets/fonts/Doto-Medium.ttf') format('truetype');
 }
 @font-face {
   font-family: 'Doto-Bold';
-  src: url('../assets/fonts/Doto-Bold.ttf') format('truetype');
+  src: url('./assets/fonts/Doto-Bold.ttf') format('truetype');
 }
 
 html, body {

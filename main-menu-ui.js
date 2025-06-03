@@ -1,7 +1,7 @@
 // main-menu-ui.js
 
-import { NightSkyBackground } from '../js/night-sky-bg.js';
-import { startMainMenuSong, stopMainMenuSong, audioCtx } from '../js/main-menu-song.js';
+import { NightSkyBackground } from './night-sky-bg.js';
+import { startMainMenuSong, stopMainMenuSong, audioCtx } from './main-menu-song.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   // fade in
@@ -83,7 +83,7 @@ function initScreenNavigation() {
     stopMainMenuSong();
     document.body.classList.replace('fade-in', 'fade-out');
     setTimeout(() => {
-      window.location.href = '../html/countdown-screen.html';
+      window.location.href = './countdown-screen.html';
     }, 500);
   };
 

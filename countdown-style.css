@@ -17,13 +17,13 @@
 
 @font-face {
   font-family: 'Doto';
-  src: url('../assets/fonts/Doto-Regular.ttf') format('truetype');
+  src: url('./assets/fonts/Doto-Regular.ttf') format('truetype');
   font-weight: var();
   font-style: var();
 }
 @font-face {
   font-family: 'Yarndings12-Regular';
-  src: url('../assets/fonts/Yarndings12-Regular.ttf') format('truetype');
+  src: url('./assets/fonts/Yarndings12-Regular.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
