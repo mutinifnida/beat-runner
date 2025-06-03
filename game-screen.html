@@ -19,6 +19,7 @@
       </div>
         <p id="hoverCaption">*TODO O PROGRESSO ATUAL SERÁ PERDIDO</p>
         <button class="start-btn" id="backToMenu">MENU INICIAL</button>
+        <button class="start-btn" id="pauseRestart">REINICIAR</button>
   <div class="menu-buttons">
         <button class="menu-btn" id="options">OPÇÕES</button>
         <button class="menu-btn" id="saveGame">SALVAR</button>
@@ -28,15 +29,16 @@
 <!--Game Over Menu-->
     <div id="gameOverMenu">
         <div id="gameOverTitle">
-        <h1>BEAT OVER</h1>
+        <h1>BEAT</br>OVER</h1>
         </div>
         <div id="gameStats">
-            <p><span>* </span> PONTUAÇÃO: <span id="statScore"></span></p>
-            <p><span>* </span> MELHOR COMBO: <span id="statCombo"></span></p>
-            <p><span>* </span> ERROS: <span id="statMisses"></span></p>
-            <p><span>* </span> TEMPO GANHO: <span id="statTimeStretch"></span></p>
+            <p><span>»</span> PONTUAÇÃO: <span id="statScore"></span></p>
+            <p><span>»</span> MELHOR COMBO: <span id="statCombo"></span></p>
+            <p><span>»</span> ERROS: <span id="statMisses"></span></p>
+            <p><span>»</span> TEMPO GANHO: <span id="statTimeStretch"></span></p>
         </div>
 
+  <button class="start-btn" id="gameOverRestart">REINICIAR</button>
   <button class="start-btn" id="gameOverBackToMenu">MENU INICIAL</button>
   </div>
 
@@ -70,7 +72,7 @@
     const timeFloatingTexts = [];
 
 // Mute Button starts "muted"
-let isMuted = true;
+let isMuted = false;
 
 const muteButtonArea = {
     x: 20,
@@ -201,7 +203,7 @@ function playNoteForGlyph(glyphChar) {
         vibratoGain.connect(osc.frequency);
 
         gainNode.gain.setValueAtTime(0.0001, startTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.2, startTime + 0.1);
+        gainNode.gain.exponentialRampToValueAtTime(0.6, startTime + 0.1);
         gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + noteDuration);
 
         osc.connect(gainNode).connect(audioCtx.destination);
@@ -222,16 +224,16 @@ function playMissClickSound() {
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(35, audioCtx.currentTime);
     gain.gain.setValueAtTime(100, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+    gain.gain.exponentialRampToValueAtTime(0.005, audioCtx.currentTime + 0.4);
 
     osc.connect(gain).connect(audioCtx.destination);
     osc.start();
     osc.stop(audioCtx.currentTime + 1);
 }
 
-// Stars and Clouds
+// Stars and Clouds 
 function randomCloudColor() {
-            const r1 = 13, g1 = 63, b1 = 81;
+            const r1 = 68, g1 = 43, b1 = 112;
             const r2 = 73, g2 = 119, b2 = 215;
             const t = Math.random();
             return {
@@ -242,7 +244,7 @@ function randomCloudColor() {
         }
 
 function randomStarColor() {
-            const r1 = 255, g1 = 240, b1 = 151;
+            const r1 = 255, g1 = 230, b1 = 105;
             const r2 = 255, g2 = 255, b2 = 255;
             const t = Math.random();
             return {
@@ -265,7 +267,8 @@ function calculateScore(distance, glyphSize, reactionTime) {
 function updateCombo(glyphChar) {
     const now = performance.now();
 
-    if (lastSuccessfulHitTime && now - lastSuccessfulHitTime > 4000) {
+//Combo Multiplier clear
+    if (lastSuccessfulHitTime && now - lastSuccessfulHitTime > 3000) {
         comboHits = 0;
         comboUniqueGlyphs.clear();
         comboMultiplier = 1;
@@ -495,10 +498,11 @@ do {
                 this.size = 40 + Math.random() * 70;
                 this.opacity = 0;
                 this.fadeSpeed = 0.02 + Math.random() * 0.02;
-                this.life = 150 + Math.random() * 200;
+        // Duração do Glyph
+                this.life = 150 + Math.random() * 150;
                 this.state = 'fadeIn';
-                this.floatSpeedX = (Math.random() - 0.1) * 0.1; // Small horizontal drift
-                this.floatSpeedY = (Math.random() - 0.1) * 0.1; // Small vertical drift
+                this.floatSpeedX = (Math.random() - 0.1) * 0.15; // Small horizontal drift
+                this.floatSpeedY = (Math.random() - 0.1) * 0.15; // Small vertical drift
                 this.glowPhase = Math.random() * Math.PI * 2;
                 this.glowSpeed = 0.15 + Math.random() * 0.03;
                 this.glowAmplitude = 0.8;
@@ -602,11 +606,13 @@ do {
                 ctx.restore();
             }
         }
-
-        function drawBackgroundGradient() {
+        // GRADIENTE
+        function drawBackgroundGradient() { 
             const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
             gradient.addColorStop(0, 'rgb(7, 7, 7)');
-            gradient.addColorStop(1, 'rgb(4, 22, 37)');
+            gradient.addColorStop(0.5, 'rgb(4, 22, 37)');
+            gradient.addColorStop(0.7, 'rgb(13, 63, 81)');
+            gradient.addColorStop(1, 'rgb(196, 116, 98)');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
@@ -635,17 +641,29 @@ do {
 
         const gameOverMenu = document.getElementById('gameOverMenu');
         const gameOverBackToMenu = document.getElementById('gameOverBackToMenu');
+        const gameOverRestart = document.getElementById('gameOverRestart');
+        const pauseRestart = document.getElementById('pauseRestart');
 
     gameOverBackToMenu.onclick = () => {
         audioCtx.resume();
-        window.location.href = 'main-menu-screen.html';
+        window.location.href = './main-menu-screen.html';
+    };
+
+        gameOverRestart.onclick = () => {
+        audioCtx.resume();
+        window.location.href = './countdown-screen.html';
+    };
+
+        pauseRestart.onclick = () => {
+        audioCtx.resume();
+        window.location.href = './countdown-screen.html';
     };
 
         setInterval(() => {
             if (!isPaused && !isGameOver) {
                 spawnGlyphs();
             }
-        }, 2000);
+        }, 2500);
 
 class TimeFloatingText {
     constructor(text, color = {r: 107, g: 216, b: 158}) {
@@ -674,7 +692,7 @@ class MilestoneText {
     this.x = canvas.width  / 2;
     this.y = canvas.height / 2;
     this.opacity = 0.5;   // semi-transparent
-    this.scale = 1.5;     // start large
+    this.scale = 2;     // start large
     this.color = color;
   }
   update() {
@@ -788,7 +806,7 @@ if (gameStarted) {
     const waveY = canvas.height - 50;
     soundWave.forEach((value, i) => {
         const height = value * 20;
-        ctx.fillStyle = 'rgb(255, 49, 98)';
+        ctx.fillStyle = 'rgb(107, 206, 158)';
         ctx.fillRect(waveX + i * 8, waveY - height, 6, height);
     });
 }

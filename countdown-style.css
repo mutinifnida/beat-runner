@@ -43,6 +43,10 @@
   font-family: 'Doto-Bold';
   src: url('./assets/fonts/Doto-Bold.ttf') format('truetype');
 }
+@font-face {
+  font-family: 'Doto-Black';
+  src: url('./assets/fonts/Doto-Black.ttf') format('truetype');
+}
 
 /* 2) Dim overlay atop the night sky while counting down */
 body.overlay::before {
@@ -58,12 +62,11 @@ body.overlay::before {
 /* 3) Countdown text: start hidden/scaled-down */
 #countdownText {
   user-select: none;
-  font-family: 'Doto';
-  font-style: Black;
-  font-size: calc(50rem + 10vw);
-  color: rgba(255, 49, 98, 0.8);
+  font-family: 'Doto-Black';
+  font-size: calc(10rem + 10vw);
+  color: rgba(255, 255, 255, 0.8);
   transition: transform 1s ease, opacity 1s ease;
-  text-shadow: rgba(255, 49, 98, 0.9);;
+  text-shadow: rgba(255, 255, 255, 0.9);;
   transform: scale(0);
   opacity: 0;
   animation: pulse 1s infinite ease-in-out;

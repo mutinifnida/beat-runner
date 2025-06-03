@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 3) Countdown sequence
   const countdownText = document.getElementById('countdownText');
-  const values = ['3', '2', '1'];
+  const values = ['3', '2', '1', 'GO'];
   let idx = 0;
 
   function tick() {
@@ -30,8 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.replace('fade-in', 'fade-out');
         setTimeout(() => {
           window.location.href = './game-screen.html';
-        }, 500);
-      }, 1000);
+        }, 1000);
+      }, 700);
     }
   }
 

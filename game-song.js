@@ -14,11 +14,11 @@ function startAmbientPad() {
     const gain = audioCtx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 3);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 2);
     osc.connect(gain).connect(audioCtx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + 30);
+    osc.stop(audioCtx.currentTime + 4);
   });
 }
 
@@ -32,11 +32,11 @@ function startBassline() {
     const gain = audioCtx.createGain();
     osc.type = 'triangule';
     osc.frequency.setValueAtTime(bassNotes[bassIndex % bassNotes.length], time);
-    gain.gain.setValueAtTime(0.3, time);
+    gain.gain.setValueAtTime(0.4, time);
     gain.gain.exponentialRampToValueAtTime(0.001, time + 1.2);
     osc.connect(gain).connect(audioCtx.destination);
     osc.start(time);
-    osc.stop(time + 1.2);
+    osc.stop(time + 4);
     bassIndex++;
   }
 
@@ -57,7 +57,7 @@ function startMelodicArp() {
     const gain = audioCtx.createGain();
     osc.type = 'highpass';
     osc.frequency.setValueAtTime(arpNotes[idx % arpNotes.length], audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
     osc.connect(gain).connect(audioCtx.destination);
     osc.start();
@@ -89,7 +89,7 @@ function startBackgroundBeat() {
     const osc2 = audioCtx.createOscillator();
     const gain2 = audioCtx.createGain();
     osc2.type = 'square';
-    osc2.frequency.setValueAtTime(600, time);
+    osc2.frequency.setValueAtTime(300, time);
     gain2.gain.setValueAtTime(0.3, time);
     gain2.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
     osc2.connect(gain2).connect(audioCtx.destination);
@@ -132,7 +132,7 @@ function startBackgroundBeat() {
     noiseFilter.type = 'highpass';
     noiseFilter.frequency.setValueAtTime(1800, time);
     const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(1, time);
+    gain.gain.setValueAtTime(0.2, time);
     gain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
     noise.connect(noiseFilter).connect(gain).connect(audioCtx.destination);
     noise.start(time);
@@ -164,10 +164,11 @@ function startBackgroundBeat() {
     playSnare(startTime + interval/2);
     playHiHat(startTime + (3*interval)/8 + swing);
     playKick(startTime + (5*interval)/8);
+
     playHiHat(startTime + (6*interval)/8);
     playSnare(startTime + (7*interval)/8);
     playHiHat(startTime + (9*interval)/8 + swing);
-    playSnare(startTime + (interval/4) + swing/2);
+    // playSnare(startTime + (interval/4) + swing/2);
 
     startTime += interval;
   }, interval * 1000);
@@ -176,7 +177,7 @@ function startBackgroundBeat() {
 // — Initialization entry point — 
 export function initGameSong() {
   startAmbientPad();
-  setInterval(startAmbientPad, 30000);
+  setInterval(startAmbientPad, 3000);
   startBassline();
   startMelodicArp();
   startBackgroundBeat();
